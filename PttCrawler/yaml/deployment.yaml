@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ptt-crawler
+  namespace: ptt-crawler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ptt-crawler
+  template:
+    metadata:
+      labels:
+        app: ptt-crawler
+    spec:
+      containers:
+      - name: ptt-crawler
+        image: collie1010/ptt-crawler:1.0.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+--------------------------------
+	
+	apiVersion: v1
+	kind: Service
+	metadata:
+	  name: ptt-crawler
+	  namespace: ptt-crawler
+	spec:
+	  selector:
+	    app: ptt-crawler
+	  ports:
+	    - protocol: TCP
+	      port: 80
+	      targetPort: 8080
+	  type: ClusterIP
+----------------------------------
+	
+	apiVersion: networking.k8s.io/v1
+	kind: Ingress
+	metadata:
+	  name: ptt-crawler
+	  namespace: ptt-crawler
+	  annotations:
+	    nginx.ingress.kubernetes.io/rewrite-target: /
+	spec:
+	  rules:
+	  - host: ptt-crawler.local  # 根據需求修改域名
+	    http:
+	      paths:
+	      - path: /
+	        pathType: Prefix
+	        backend:
+	          service:
+	            name: ptt-crawler
+	            port:
+	              number: 80
+-----------------------------------
+	apiVersion: v1
+	kind: Namespace
+	metadata:
+	  name: ptt-crawler
+
+	
